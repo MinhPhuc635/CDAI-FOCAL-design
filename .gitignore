@@ -1,0 +1,10 @@
+__pycache__/
+.venv/
+.streamlit/secrets.toml
+models/*.ts
+models/*.log
+models/training_data.json
+data/processed/
+data/indexes/
+focal-main/weights/
+focal-main/result/

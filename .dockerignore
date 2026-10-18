@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+.git/
+data/processed/
+data/indexes/
+models/training.log
+models/training_data.json
+focal-main/weights/
+focal-main/result/

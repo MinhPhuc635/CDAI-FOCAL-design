@@ -1,0 +1,77 @@
+{
+  "dataset_id": "MOD_vehicle",
+  "dataset_root": "F:\\MOD_vehicle\\raw_data",
+  "test_accuracy": 0.26071,
+  "test_macro_f1": 0.28229,
+  "test_accuracy_percent": 26.07,
+  "classes": [
+    "bicycle",
+    "fortuner",
+    "innova",
+    "motor",
+    "pickup",
+    "santafe",
+    "scooter",
+    "vinfast",
+    "vios",
+    "walk",
+    "xpander"
+  ],
+  "sample_count": 15502,
+  "split_counts": {
+    "train": {
+      "bicycle": 1160,
+      "fortuner": 108,
+      "innova": 106,
+      "motor": 1112,
+      "pickup": 1175,
+      "santafe": 111,
+      "scooter": 809,
+      "vinfast": 1068,
+      "vios": 1148,
+      "walk": 1213,
+      "xpander": 1988
+    },
+    "val": {
+      "bicycle": 262,
+      "fortuner": 69,
+      "innova": 130,
+      "motor": 169,
+      "pickup": 175,
+      "santafe": 20,
+      "scooter": 222,
+      "vinfast": 280,
+      "vios": 260,
+      "walk": 112,
+      "xpander": 560
+    },
+    "test": {
+      "bicycle": 93,
+      "fortuner": 24,
+      "innova": 112,
+      "motor": 432,
+      "pickup": 415,
+      "santafe": 123,
+      "scooter": 396,
+      "vinfast": 459,
+      "vios": 374,
+      "walk": 216,
+      "xpander": 601
+    }
+  },
+  "evaluation_split_by_class": {
+    "bicycle": "held_out_recording",
+    "fortuner": "held_out_recording",
+    "innova": "held_out_recording",
+    "motor": "held_out_recording",
+    "pickup": "held_out_recording",
+    "santafe": "held_out_recording",
+    "scooter": "held_out_recording",
+    "vinfast": "held_out_recording",
+    "vios": "held_out_recording",
+    "walk": "held_out_recording",
+    "xpander": "held_out_recording"
+  },
+  "checkpoint": "vehicle_focal.pt",
+  "architecture": "FOCAL pretraining + DeepSense fine-tuning"
+}
