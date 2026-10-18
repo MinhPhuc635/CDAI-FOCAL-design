@@ -8,8 +8,17 @@ import wave
 from pathlib import Path
 
 import numpy as np
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
 import torch
 from scipy.signal import resample_poly
+
+torch.set_num_threads(max(1, int(os.getenv("FOCAL_TORCH_THREADS", "1"))))
+try:
+    torch.set_num_interop_threads(1)
+except RuntimeError:
+    # PyTorch only allows this setting before its inter-op pool is initialized.
+    pass
 
 ROOT = Path(__file__).resolve().parent
 FOCAL_SRC = ROOT / "focal-main" / "src"
@@ -91,7 +100,9 @@ def make_time_windows(audio_8k: np.ndarray, seismic_100hz: np.ndarray) -> tuple[
     seismic = seismic_100hz[: length * SEISMIC_RATE * WINDOW_SECONDS]
     audio = audio.reshape(length, NUM_INTERVALS, int(INTERVAL_SECONDS * AUDIO_RATE))[:, None, :, :]
     seismic = seismic.reshape(length, NUM_INTERVALS, int(INTERVAL_SECONDS * SEISMIC_RATE))[:, None, :, :]
-    return torch.from_numpy(audio.copy()), torch.from_numpy(seismic.copy())
+    # The arrays are already views into contiguous, decoded buffers. Avoid a
+    # second full-size copy; inference processes these windows in small batches.
+    return torch.from_numpy(audio), torch.from_numpy(seismic)
 
 
 def time_to_frequency(audio: torch.Tensor, seismic: torch.Tensor) -> dict:
@@ -131,13 +142,20 @@ def load_focal_model(device: str = "cpu"):
 
 
 @torch.inference_mode()
-def predict_windows(model, audio: torch.Tensor, seismic: torch.Tensor, batch_size: int = 32) -> np.ndarray:
+def predict_windows(model, audio: torch.Tensor, seismic: torch.Tensor, batch_size: int = 4) -> np.ndarray:
     """Average per-window softmax probabilities across a recording."""
-    probabilities = []
+    probability_sum = None
+    total_windows = 0
     for start in range(0, len(audio), batch_size):
-        end = start + batch_size
+        end = min(start + batch_size, len(audio))
         freq = time_to_frequency(audio[start:end], seismic[start:end])
         logits = model(freq)
-        probabilities.append(torch.softmax(logits, dim=1).cpu())
-    return torch.cat(probabilities, dim=0).mean(dim=0).numpy()
+        batch_probabilities = torch.softmax(logits, dim=1)
+        batch_sum = batch_probabilities.sum(dim=0).cpu()
+        probability_sum = batch_sum if probability_sum is None else probability_sum + batch_sum
+        total_windows += end - start
+        del freq, logits, batch_probabilities, batch_sum
+    if probability_sum is None:
+        raise ValueError("Không có cửa sổ tín hiệu hợp lệ để dự đoán.")
+    return (probability_sum / total_windows).numpy()
 

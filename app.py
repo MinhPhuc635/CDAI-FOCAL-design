@@ -15,6 +15,8 @@ import focal_pipeline as focal
 
 ROOT = Path(__file__).parent
 DATA_DIR = Path(os.getenv("MOD_VEHICLE_DATA_DIR", r"F:\MOD_vehicle\raw_data"))
+MAX_UPLOAD_FILE_BYTES = 16 * 1024 * 1024
+MAX_UPLOAD_TOTAL_BYTES = 24 * 1024 * 1024
 MODEL_PATH = focal.MODEL_PATH
 LABELS_PATH = focal.LABELS_PATH
 METRICS_PATH = focal.METRICS_PATH
@@ -178,6 +180,10 @@ with col_b:
                 if not seismic_file:
                     missing.append("địa chấn EHZ (.csv, thường tên ehz.csv)")
                 st.warning("Còn thiếu: " + " và ".join(missing) + ".")
+            elif any(file.size > MAX_UPLOAD_FILE_BYTES for file in uploads):
+                st.error("Mỗi file tối đa 16 MB trên máy chủ Render Free. Hãy cắt tín hiệu thành đoạn ngắn hơn rồi tải lại.")
+            elif sum(file.size for file in uploads) > MAX_UPLOAD_TOTAL_BYTES:
+                st.error("Tổng dung lượng các file tối đa 24 MB trên máy chủ Render Free. Hãy tải đúng cặp âm thanh và EHZ cần dự đoán.")
             else:
                 signature = tuple(sorted((file.name, file.size) for file in uploads))
                 try:
@@ -189,7 +195,7 @@ with col_b:
                     seismic = focal.read_seismic_csv(seismic_file)
                     audio_windows, seismic_windows = focal.make_time_windows(audio, seismic)
                     model, loaded_labels = load_model(str(MODEL_PATH))
-                    probabilities = focal.predict_windows(model, audio_windows, seismic_windows)
+                    probabilities = focal.predict_windows(model, audio_windows, seismic_windows, batch_size=4)
                     metrics = json.loads(METRICS_PATH.read_text(encoding="utf-8"))
                     st.session_state["prediction"] = {
                         "labels": loaded_labels,
