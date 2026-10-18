@@ -73,5 +73,197 @@
     "xpander": "held_out_recording"
   },
   "checkpoint": "vehicle_focal.pt",
-  "architecture": "FOCAL pretraining + DeepSense fine-tuning"
+  "architecture": "FOCAL pretraining + DeepSense fine-tuning",
+  "test_window_accuracy_percent": 26.07,
+  "test_recording_accuracy": 0.42105263157894735,
+  "test_recording_accuracy_percent": 42.11,
+  "test_independent_recordings": 19,
+  "test_independent_recording_accuracy": 0.42105263157894735,
+  "test_independent_recording_accuracy_percent": 42.11,
+  "test_recordings": 19,
+  "test_per_class": {
+    "bicycle": {
+      "correct": 0,
+      "recordings": 2
+    },
+    "fortuner": {
+      "correct": 0,
+      "recordings": 1
+    },
+    "innova": {
+      "correct": 1,
+      "recordings": 1
+    },
+    "motor": {
+      "correct": 2,
+      "recordings": 2
+    },
+    "pickup": {
+      "correct": 1,
+      "recordings": 2
+    },
+    "santafe": {
+      "correct": 1,
+      "recordings": 1
+    },
+    "scooter": {
+      "correct": 0,
+      "recordings": 2
+    },
+    "vinfast": {
+      "correct": 0,
+      "recordings": 2
+    },
+    "vios": {
+      "correct": 0,
+      "recordings": 2
+    },
+    "walk": {
+      "correct": 2,
+      "recordings": 2
+    },
+    "xpander": {
+      "correct": 1,
+      "recordings": 2
+    }
+  },
+  "test_predictions": [
+    {
+      "recording": "bicycle__bicycle--rs1",
+      "windows": 48,
+      "true": "bicycle",
+      "predicted": "vinfast",
+      "confidence_percent": 20.14
+    },
+    {
+      "recording": "bicycle__bicycle--rs2",
+      "windows": 45,
+      "true": "bicycle",
+      "predicted": "vinfast",
+      "confidence_percent": 19.08
+    },
+    {
+      "recording": "fortuner__fortuner3--rs1",
+      "windows": 24,
+      "true": "fortuner",
+      "predicted": "bicycle",
+      "confidence_percent": 19.11
+    },
+    {
+      "recording": "innova__innova3--rs1",
+      "windows": 112,
+      "true": "innova",
+      "predicted": "innova",
+      "confidence_percent": 28.63
+    },
+    {
+      "recording": "motor__motor--rs1",
+      "windows": 260,
+      "true": "motor",
+      "predicted": "motor",
+      "confidence_percent": 28.52
+    },
+    {
+      "recording": "motor__motor2--rs3",
+      "windows": 172,
+      "true": "motor",
+      "predicted": "motor",
+      "confidence_percent": 25.49
+    },
+    {
+      "recording": "pickup__pickup--rs7",
+      "windows": 239,
+      "true": "pickup",
+      "predicted": "bicycle",
+      "confidence_percent": 21.48
+    },
+    {
+      "recording": "pickup__pickup2--rs2",
+      "windows": 176,
+      "true": "pickup",
+      "predicted": "pickup",
+      "confidence_percent": 20.57
+    },
+    {
+      "recording": "santafe__santafe2--rs1",
+      "windows": 123,
+      "true": "santafe",
+      "predicted": "santafe",
+      "confidence_percent": 81.28
+    },
+    {
+      "recording": "scooter__scooter--rs1",
+      "windows": 224,
+      "true": "scooter",
+      "predicted": "vios",
+      "confidence_percent": 21.31
+    },
+    {
+      "recording": "scooter__scooter2--rs3",
+      "windows": 172,
+      "true": "scooter",
+      "predicted": "pickup",
+      "confidence_percent": 19.97
+    },
+    {
+      "recording": "vinfast__vinfast--rs7",
+      "windows": 287,
+      "true": "vinfast",
+      "predicted": "bicycle",
+      "confidence_percent": 23.43
+    },
+    {
+      "recording": "vinfast__vinfast2--rs3",
+      "windows": 172,
+      "true": "vinfast",
+      "predicted": "bicycle",
+      "confidence_percent": 24.23
+    },
+    {
+      "recording": "vios__vios2--rs2",
+      "windows": 187,
+      "true": "vios",
+      "predicted": "pickup",
+      "confidence_percent": 20.42
+    },
+    {
+      "recording": "vios__vios2--rs3",
+      "windows": 187,
+      "true": "vios",
+      "predicted": "pickup",
+      "confidence_percent": 19.16
+    },
+    {
+      "recording": "walk__walk--rs2",
+      "windows": 110,
+      "true": "walk",
+      "predicted": "walk",
+      "confidence_percent": 36.01
+    },
+    {
+      "recording": "walk__walk--rs7",
+      "windows": 106,
+      "true": "walk",
+      "predicted": "walk",
+      "confidence_percent": 42.0
+    },
+    {
+      "recording": "xpander__xpander--rs7",
+      "windows": 277,
+      "true": "xpander",
+      "predicted": "vios",
+      "confidence_percent": 26.3
+    },
+    {
+      "recording": "xpander__xpander3--rs2",
+      "windows": 324,
+      "true": "xpander",
+      "predicted": "xpander",
+      "confidence_percent": 23.92
+    }
+  ],
+  "classifier_version": 2,
+  "training_sampling": "legacy_checkpoint_kept_after_comparison",
+  "ood_min_confidence": 0.3,
+  "ood_min_margin": 0.08
 }

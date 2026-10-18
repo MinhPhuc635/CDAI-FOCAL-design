@@ -3,8 +3,9 @@ import torch
 import logging
 import random
 import numpy as np
+from collections import Counter
 
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, WeightedRandomSampler
 from input_utils.multi_modal_dataset import MultiModalDataset, MultiModalSequenceDataset
 from torch.utils.data import Sampler
 
@@ -41,8 +42,35 @@ def create_dataloader(dataloader_option, args, batch_size=64, workers=5):
         sampler = BatchSeqSampler(args, batch_size, dataset)
         dataloader = DataLoader(dataset, batch_sampler=sampler, num_workers=workers)
     else:
+        sampler = None
+        is_vehicle_finetune = (
+            dataloader_option == "train"
+            and args.dataset == "MOD"
+            and args.task == "vehicle_classification"
+            and args.stage == "finetune"
+        )
+        if is_vehicle_finetune:
+            # Use square-root class balancing: frequent labels remain more common,
+            # while rare labels receive substantially more examples. Within each
+            # label, distribute its weight evenly across recordings.
+            class_names = [os.path.basename(path).split("__", 1)[0] for path in dataset.sample_files]
+            recording_ids = [os.path.basename(path).rsplit("__", 1)[0] for path in dataset.sample_files]
+            class_counts = Counter(class_names)
+            recording_counts = Counter(recording_ids)
+            recording_sets = {}
+            for label, recording_id in zip(class_names, recording_ids):
+                recording_sets.setdefault(label, set()).add(recording_id)
+            recordings_per_class = {label: len(ids) for label, ids in recording_sets.items()}
+            sample_weights = [
+                (class_counts[label] ** 0.5)
+                / (recordings_per_class[label] * recording_counts[recording_id])
+                for label, recording_id in zip(class_names, recording_ids)
+            ]
+            sampler = WeightedRandomSampler(sample_weights, num_samples=len(sample_weights), replacement=True)
         dataloader = DataLoader(
-            dataset, batch_size=batch_size, shuffle=(dataloader_option == "train"), num_workers=workers
+            dataset, batch_size=batch_size,
+            shuffle=(dataloader_option == "train" and sampler is None),
+            sampler=sampler, num_workers=workers
         )
 
     return dataloader

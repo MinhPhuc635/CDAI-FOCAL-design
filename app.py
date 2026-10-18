@@ -58,7 +58,7 @@ def checkpoint_matches_dataset() -> bool:
         metrics = json.loads(METRICS_PATH.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return False
-    return metrics.get("dataset_id") == "MOD_vehicle"
+    return metrics.get("dataset_id") == "MOD_vehicle" and metrics.get("classifier_version", 0) >= 2
 
 
 def inspect_raw_uploads(files) -> tuple[list[dict], list, list]:
@@ -197,9 +197,18 @@ with col_b:
                     model, loaded_labels = load_model(str(MODEL_PATH))
                     probabilities = focal.predict_windows(model, audio_windows, seismic_windows, batch_size=4)
                     metrics = json.loads(METRICS_PATH.read_text(encoding="utf-8"))
+                    signal_ood_reason = focal.detect_out_of_distribution_signal(audio, seismic)
+                    ranked_probs = np.sort(probabilities)
+                    confidence = float(ranked_probs[-1])
+                    margin = confidence - float(ranked_probs[-2])
+                    # Reject weak or ambiguous outputs rather than forcing a known label.
+                    min_confidence = float(metrics.get("ood_min_confidence", 0.30))
+                    min_margin = float(metrics.get("ood_min_margin", 0.08))
                     st.session_state["prediction"] = {
                         "labels": loaded_labels,
                         "probs": probabilities.tolist(),
+                        "unknown": signal_ood_reason is not None or confidence < min_confidence or margin < min_margin,
+                        "unknown_reason": signal_ood_reason or "Tín hiệu yếu hoặc hai lớp dự đoán gần nhau.",
                         "test_accuracy_percent": metrics["test_accuracy_percent"],
                         "independent_recording_accuracy_percent": metrics.get("test_independent_recording_accuracy_percent"),
                         "independent_recordings": metrics.get("test_independent_recordings"),
@@ -223,7 +232,11 @@ with col_c:
             accuracy_text = f'Test accuracy theo cửa sổ · {result["test_accuracy_percent"]:.1f}%'
             if recording_score is not None:
                 accuracy_text += f' · bản ghi độc lập · {recording_score:.1f}% ({result["independent_recordings"]} lượt)'
-            st.markdown(f'<div class="resultbox"><div class="muted">Phương tiện nhận diện</div><div class="pred">{result["labels"][idx]}</div><div class="muted">Độ tin cậy dự đoán</div><div class="conf">{confidence:.1f}%</div><div class="muted">{accuracy_text}</div></div>', unsafe_allow_html=True)
+            if result.get("unknown"):
+                st.warning("Không xác định / có thể ngoài tập dữ liệu. " + result.get("unknown_reason", ""))
+                st.markdown(f'<div class="resultbox"><div class="muted">Lớp gần nhất (tham khảo)</div><div class="pred">{result["labels"][idx]}</div><div class="muted">Độ tin cậy của lớp gần nhất</div><div class="conf">{confidence:.1f}%</div></div>', unsafe_allow_html=True)
+            else:
+                st.markdown(f'<div class="resultbox"><div class="muted">Phương tiện nhận diện</div><div class="pred">{result["labels"][idx]}</div><div class="muted">Độ tin cậy dự đoán</div><div class="conf">{confidence:.1f}%</div><div class="muted">{accuracy_text}</div></div>', unsafe_allow_html=True)
             st.caption(f"Tổng hợp từ {result['windows']} cửa sổ tín hiệu, mỗi cửa sổ 2 giây.")
             st.markdown("**Xác suất các lớp khác**")
             for i in order[1:6]:

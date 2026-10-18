@@ -51,7 +51,10 @@ def main() -> None:
         current_metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         current_metrics = {}
-    checkpoint_matches_dataset = current_metrics.get("dataset_id") == "MOD_vehicle"
+    checkpoint_matches_dataset = (
+        current_metrics.get("dataset_id") == "MOD_vehicle"
+        and current_metrics.get("classifier_version", 0) >= 3
+    )
     if model_path.exists() and metrics_path.exists() and checkpoint_matches_dataset and not args_cli.force:
         print(f"Existing checkpoint ready: {model_path}")
         return
@@ -81,9 +84,9 @@ def main() -> None:
             prepared_data = {}
         data_ready = data_ready and prepared_data.get("dataset_id") == "MOD_vehicle"
         data_ready = data_ready and prepared_data.get("dataset_root") == str(dataset_root)
-        if args_cli.force or not data_ready:
+        if not data_ready:
             env["FOCAL_REBUILD_DATA"] = "1"
-        if not data_ready or args_cli.force:
+        if not data_ready:
             run_logged([PYTHON, str(ROOT / "prepare_mod_data.py")], ROOT, env, log)
         else:
             print("Using the existing prepared MOD window indexes.", flush=True)
@@ -120,6 +123,10 @@ def main() -> None:
         training_data = json.loads((ROOT / "models" / "training_data.json").read_text(encoding="utf-8"))
         metrics = {
             "dataset_id": "MOD_vehicle",
+            "classifier_version": 3,
+            "training_sampling": "sqrt_class_frequency_recording_balanced",
+            "ood_min_confidence": 0.30,
+            "ood_min_margin": 0.08,
             "dataset_root": str(dataset_root),
             "test_accuracy": float(metrics_match.group(1)),
             "test_macro_f1": float(metrics_match.group(2)),

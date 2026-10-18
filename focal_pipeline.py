@@ -38,6 +38,38 @@ INTERVAL_SECONDS = 0.2
 NUM_INTERVALS = 10
 
 
+def _spectral_shape(signal: np.ndarray, sample_count: int) -> tuple[float, float]:
+    """Return normalized spectral entropy and flatness for a finite signal."""
+    # Bound temporary arrays on small-memory hosts. One synchronized two-second
+    # window is enough for the broadband-noise guard and avoids copying uploads.
+    sample = np.asarray(signal[:sample_count], dtype=np.float32)
+    centered = sample.astype(np.float64) - float(np.mean(sample, dtype=np.float64))
+    power = np.abs(np.fft.rfft(centered)) ** 2
+    power = power[1:]  # Ignore DC; it otherwise hides the shape of quiet signals.
+    total = float(power.sum())
+    if total <= 1e-30:
+        return 0.0, 0.0
+    normalized = power / total
+    entropy = float(-np.sum(normalized * np.log(normalized + 1e-30)) / np.log(len(power)))
+    flatness = float(np.exp(np.mean(np.log(power + 1e-30))) / (np.mean(power) + 1e-30))
+    return entropy, flatness
+
+
+def detect_out_of_distribution_signal(audio: np.ndarray, seismic: np.ndarray) -> str | None:
+    """Reject broadband noise unlike the paired signals in the training corpus.
+
+    Thresholds leave a margin above the observed MOD_vehicle training recordings.
+    This is a useful guard, not a universal detector for every unseen source.
+    """
+    audio_entropy, audio_flatness = _spectral_shape(audio, AUDIO_RATE * WINDOW_SECONDS)
+    seis_entropy, seis_flatness = _spectral_shape(seismic, SEISMIC_RATE * WINDOW_SECONDS)
+    if audio_entropy > 0.88 and audio_flatness > 0.20:
+        return "Âm thanh có phổ gần nhiễu trắng, khác tín hiệu phương tiện trong MOD_vehicle."
+    if seis_entropy > 0.92 and seis_flatness > 0.28:
+        return "Tín hiệu địa chấn có phổ gần nhiễu trắng, khác tín hiệu MOD_vehicle."
+    return None
+
+
 def read_audio_wav(source) -> np.ndarray:
     """Read mono/stereo PCM WAV as float values on the original integer scale."""
     if hasattr(source, "seek"):
@@ -57,6 +89,8 @@ def read_audio_wav(source) -> np.ndarray:
         raise ValueError(f"WAV dùng định dạng PCM {sample_width * 8}-bit chưa được hỗ trợ.")
     if channels > 1:
         audio = audio.reshape(-1, channels)[:, 0]
+    if not np.isfinite(audio).all() or float(np.std(audio)) < 1e-6:
+        raise ValueError("WAV/CSV âm thanh không chứa tín hiệu hợp lệ (NaN/Inf hoặc gần như phẳng).")
     return resample_poly(audio, up=1, down=2).astype(np.float32, copy=False)
 
 
@@ -73,6 +107,8 @@ def read_audio_csv(source) -> np.ndarray:
         audio = np.loadtxt(source, usecols=(0,), dtype=np.float32)
     if audio.ndim != 1 or audio.size == 0:
         raise ValueError("Không đọc được tín hiệu âm thanh từ CSV.")
+    if not np.isfinite(audio).all() or float(np.std(audio)) < 1e-6:
+        raise ValueError("CSV âm thanh không chứa tín hiệu hợp lệ (NaN/Inf hoặc gần như phẳng).")
     return resample_poly(audio, up=1, down=2).astype(np.float32, copy=False)
 
 
@@ -88,6 +124,8 @@ def read_seismic_csv(source) -> np.ndarray:
         values = np.loadtxt(source, delimiter=",", usecols=(0,), dtype=np.float32)
     if values.ndim != 1 or values.size == 0:
         raise ValueError("Không đọc được tín hiệu địa chấn từ ehz.csv.")
+    if not np.isfinite(values).all() or float(np.std(values)) < 1e-12:
+        raise ValueError("CSV địa chấn không chứa tín hiệu hợp lệ (NaN/Inf hoặc gần như phẳng).")
     return values
 
 
