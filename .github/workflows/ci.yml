@@ -1,0 +1,31 @@
+name: CI - Build FOCAL image
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Validate source and build container
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Check Python syntax
+        run: python -m compileall -q app.py focal_pipeline.py prepare_mod_data.py train_focal.py evaluate_focal.py focal-main/src
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image (do not publish)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: focal-vehicle-classifier:ci

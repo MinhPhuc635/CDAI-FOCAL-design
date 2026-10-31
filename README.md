@@ -63,6 +63,37 @@ python train_focal.py
 
 Huấn luyện cần dataset và tài nguyên máy phù hợp. Người chỉ sử dụng ứng dụng đã deploy không cần thực hiện bước này.
 
+## Docker
+
+Image chạy suy luận trên CPU và đã bao gồm checkpoint cùng nhãn, metrics. Không cần dataset để chạy dự đoán. Build và chạy local bằng Docker Desktop:
+
+```powershell
+docker build -t focal-vehicle-classifier:local .
+docker run --rm -p 8501:8501 focal-vehicle-classifier:local
+```
+
+Mở `http://localhost:8501`. Không đưa dataset huấn luyện, `.venv` hoặc log huấn luyện vào image.
+
+## CI/CD và Docker Hub
+
+GitHub Actions chạy ở mỗi lần push lên `main` và mỗi pull request. Pipeline kiểm tra cú pháp Python, sau đó build Docker image để phát hiện lỗi đóng gói. CI không đẩy image lên registry.
+
+Workflow **Publish FOCAL image to Docker Hub** chỉ chạy thủ công sau khi image và nội dung repo đã được review. Để chuẩn bị lần xuất bản đầu tiên:
+
+1. Tạo Docker Hub access token có quyền ghi image.
+2. Trong GitHub repo, thêm Actions secrets `DOCKERHUB_USERNAME` và `DOCKERHUB_TOKEN`.
+3. Trong **Settings → Environments**, tạo environment tên `docker-hub-publish`; bật required reviewers nếu muốn GitHub chặn job cho tới khi có người duyệt.
+4. Mở **Actions → Publish FOCAL image to Docker Hub → Run workflow**, nhập tên image dạng `ten-tai-khoan/cdai-focal-design` và tag, ví dụ `latest`.
+
+Job xuất bản có environment gate để người được chỉ định review trước khi chạy. Chưa có image nào được đẩy lên Docker Hub từ máy phát triển này. Sau khi publish, máy khác có thể chạy image như sau:
+
+```powershell
+docker pull ten-tai-khoan/cdai-focal-design:latest
+docker run --rm -p 8501:8501 ten-tai-khoan/cdai-focal-design:latest
+```
+
+Thay `ten-tai-khoan` bằng Docker Hub username đã dùng khi xuất bản.
+
 ## Công nghệ và nguồn
 
 - Giao diện: Streamlit

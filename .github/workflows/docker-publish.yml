@@ -1,0 +1,42 @@
+name: Publish FOCAL image to Docker Hub
+
+on:
+  workflow_dispatch:
+    inputs:
+      image:
+        description: Docker Hub image name, for example username/cdai-focal-design
+        required: true
+        type: string
+      tag:
+        description: Image tag
+        required: true
+        default: latest
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Build and publish reviewed image
+    runs-on: ubuntu-latest
+    environment: docker-hub-publish
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and publish image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ inputs.image }}:${{ inputs.tag }}
