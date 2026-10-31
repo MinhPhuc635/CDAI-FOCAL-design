@@ -1,49 +1,49 @@
 # Vehicle Acoustic–Seismic Classifier
 
-Ứng dụng web phân loại phương tiện từ tín hiệu âm thanh và địa chấn bằng mô hình FOCAL. Giao diện nhận cặp tín hiệu, chạy suy luận và hiển thị lớp phương tiện dự đoán, độ tin cậy, cùng xác suất của một số lớp tiếp theo.
+A Streamlit application that classifies vehicles from synchronized audio and seismic signals using the FOCAL model. It displays the predicted class, confidence score, and probabilities for other likely classes.
 
-## Mở ứng dụng
+## Open the app
 
-Dùng ứng dụng đã deploy tại:
+Use the deployed application:
 
 **[https://cdai-focal-1.onrender.com/](https://cdai-focal-1.onrender.com/)**
 
-Không cần cài đặt Python hay huấn luyện mô hình trên máy người dùng. Server deploy cần có checkpoint FOCAL và các file cấu hình nhãn/metrics đi kèm. Lần đầu mở dịch vụ miễn phí có thể cần chờ server khởi động.
+You do not need to install Python or train the model to use the deployed app. The server must include the FOCAL checkpoint and its label and metrics files. The service may take a short time to start when opened.
 
-## Chuẩn bị dữ liệu
+## Dataset and input files
 
-Dataset tham khảo và tải về từ Kaggle:
+The dataset is available on Kaggle:
 
-**[FOCAL Dataset trên Kaggle](https://www.kaggle.com/datasets/nguyenmp/focal-dataset)**
+**[FOCAL Dataset](https://www.kaggle.com/datasets/nguyenmp/focal-dataset)**
 
-Mỗi lượt ghi cần có đủ hai thành phần tín hiệu đồng bộ:
+Each recording needs a synchronized audio signal and vertical EHZ seismic signal:
 
-- **Âm thanh:** file `.wav` hoặc CSV theo cấu trúc MOD, thường có tên bắt đầu bằng `aud` hoặc `audio` (ví dụ `aud.csv`, `aud16000.csv`).
-- **Địa chấn:** CSV thành phần dọc EHZ, thường có tên `ehz.csv`.
+- **Audio:** a `.wav` file or a MOD-format CSV whose name usually starts with `aud` or `audio`, such as `aud.csv` or `aud16000.csv`.
+- **Seismic:** an EHZ CSV, usually named `ehz.csv`.
 
-Ứng dụng nhận file `.csv` và `.wav`. WAV cần đọc được; với dữ liệu MOD, hãy giữ các file âm thanh và EHZ thuộc cùng lượt ghi để chúng tương ứng với nhau. Chỉ tải một file âm thanh hoặc một file địa chấn thì chưa đủ để dự đoán.
+The app accepts `.csv` and `.wav` files. Keep the audio and EHZ files from the same recording together. Uploading only one signal is not enough to make a prediction.
 
-> Lưu ý: Kaggle cung cấp dataset để tải về và nghiên cứu. Ứng dụng trên Render nhận các file tín hiệu bạn tải lên; nó không tự truy cập ổ đĩa `F:` trên máy cá nhân của bạn.
+The Kaggle dataset is for downloading and research. The deployed Render app can only read files uploaded through the browser; it cannot access the `F:` drive on your computer.
 
-## Cách sử dụng
+## Use the app
 
-1. Mở [ứng dụng Vehicle Acoustic–Seismic Classifier](https://cdai-focal-1.onrender.com/).
-2. Ở khối **Dữ liệu đầu vào**, tải lên file âm thanh `.wav` (hoặc `aud*.csv`) và file địa chấn EHZ `.csv` thuộc cùng lượt ghi. Có thể chọn nhiều file cùng lúc.
-3. Kiểm tra danh sách file. Nếu app không tự chọn được tín hiệu, chọn thủ công file âm thanh và CSV EHZ thích hợp.
-4. Nhấn **Chạy dự đoán**.
-5. Đọc kết quả ở khối **Kết quả**: phương tiện nhận diện, độ tin cậy dự đoán và xác suất lớp khác. Nếu tín hiệu yếu, không hợp lệ hoặc dự đoán không đủ rõ, app có thể báo **Không xác định / có thể ngoài tập dữ liệu** thay vì gán một nhãn chắc chắn.
+1. Open the [Vehicle Acoustic–Seismic Classifier](https://cdai-focal-1.onrender.com/).
+2. In **Input Data**, upload the audio file (`.wav` or `aud*.csv`) and the matching EHZ seismic CSV. You can select multiple files at once.
+3. Check the uploaded file list. If the app does not identify a signal automatically, select the correct audio and EHZ files manually.
+4. Select **Run Prediction**.
+5. Read the result in **Results**: the predicted vehicle class, prediction confidence, and probabilities for other classes. If the signal is weak, invalid, or ambiguous, the app may report **Unknown / possibly outside the dataset** instead of forcing a class label.
 
-Ứng dụng chia tín hiệu thành các cửa sổ 2 giây để suy luận bằng FOCAL. Giới hạn hiện tại trên server Render là tối đa **16 MB mỗi file** và **24 MB tổng dung lượng mỗi lượt tải lên**.
+FOCAL splits the signals into two-second windows for inference. The current Render upload limits are **16 MB per file** and **24 MB total per upload**.
 
-## Hiểu kết quả
+## Understand the results
 
-- **Độ tin cậy dự đoán** là điểm xác suất của lớp đứng đầu, tổng hợp từ các cửa sổ tín hiệu trong file đã tải lên. Đây không phải là cam kết rằng dự đoán đúng với tỷ lệ tương ứng.
-- **Test accuracy** (nếu hiển thị) là chỉ số đánh giá mô hình trên tập kiểm tra của dataset, không phải độ chính xác đã được xác nhận cho file bạn vừa tải lên.
-- Nhãn `Không xác định` có nghĩa tín hiệu nằm ngoài điều kiện mà mô hình nhận diện đáng tin cậy, hoặc các lớp dự đoán quá gần nhau. Hãy kiểm tra lại cặp file, chất lượng tín hiệu và tính đồng bộ.
+- **Prediction confidence** is the probability score of the top class, aggregated across signal windows. It is not a guarantee that the prediction is correct at that rate.
+- **Test accuracy**, when shown, measures model performance on the dataset's held-out test set. It does not measure whether the current uploaded file was classified correctly.
+- **Unknown** means the signal may be outside the conditions the model can reliably recognize, or that the top class probabilities are too close. Check that the files match, are synchronized, and have usable signal quality.
 
-## Chạy ứng dụng trên máy cá nhân
+## Run the app locally
 
-Yêu cầu Python theo `requirements.txt`. Trong PowerShell:
+Install the Python version required by `requirements.txt`. In PowerShell, run:
 
 ```powershell
 py -m venv .venv
@@ -52,50 +52,83 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-Mở địa chỉ local được Streamlit in ra, thường là `http://localhost:8501`.
+Open the local address printed by Streamlit, usually `http://localhost:8501`.
 
-Nếu muốn huấn luyện lại từ dataset đã tải về, cấu hình biến môi trường tới thư mục `raw_data` có cấu trúc lớp/lượt ghi của dataset rồi chạy `train_focal.py`. Ví dụ:
+To train the model again from a downloaded dataset, set the environment variable to the dataset's `raw_data` directory and run `train_focal.py`. For example:
 
 ```powershell
 $env:MOD_VEHICLE_DATA_DIR='F:\MOD_vehicle\raw_data'
 python train_focal.py
 ```
 
-Huấn luyện cần dataset và tài nguyên máy phù hợp. Người chỉ sử dụng ứng dụng đã deploy không cần thực hiện bước này.
+Training requires the dataset and suitable compute resources. Users of the deployed app do not need to train the model.
 
-## Docker
+## Run with Docker
 
-Image chạy suy luận trên CPU và đã bao gồm checkpoint cùng nhãn, metrics. Không cần dataset để chạy dự đoán. Build và chạy local bằng Docker Desktop:
+The image runs CPU inference and includes the model checkpoint, labels, and metrics. It does not require the training dataset to make predictions. With Docker Desktop running, build and start the app locally:
 
 ```powershell
 docker build -t focal-vehicle-classifier:local .
 docker run --rm -p 8501:8501 focal-vehicle-classifier:local
 ```
 
-Mở `http://localhost:8501`. Không đưa dataset huấn luyện, `.venv` hoặc log huấn luyện vào image.
+Open `http://localhost:8501`. The dataset, `.venv`, and training logs should not be added to the image.
 
-## CI/CD và Docker Hub
+## CI/CD with GitHub Actions
 
-GitHub Actions chạy ở mỗi lần push lên `main` và mỗi pull request. Pipeline kiểm tra cú pháp Python, sau đó build Docker image để phát hiện lỗi đóng gói. CI không đẩy image lên registry.
+The **CI - Build FOCAL image** workflow runs automatically on pushes to `main` and on pull requests. It checks Python syntax and builds the Docker image to catch packaging errors. It does **not** publish the image.
 
-Workflow **Publish FOCAL image to Docker Hub** chỉ chạy thủ công sau khi image và nội dung repo đã được review. Để chuẩn bị lần xuất bản đầu tiên:
+To check a run, open the repository on GitHub, select **Actions**, and open the latest **CI - Build FOCAL image** run:
 
-1. Tạo Docker Hub access token có quyền ghi image.
-2. Trong GitHub repo, thêm Actions secrets `DOCKERHUB_USERNAME` và `DOCKERHUB_TOKEN`.
-3. Trong **Settings → Environments**, tạo environment tên `docker-hub-publish`; bật required reviewers nếu muốn GitHub chặn job cho tới khi có người duyệt.
-4. Mở **Actions → Publish FOCAL image to Docker Hub → Run workflow**, nhập tên image dạng `ten-tai-khoan/cdai-focal-design` và tag, ví dụ `latest`.
+- A green check and `success` mean the syntax check and Docker build passed.
+- A red X and `failure` mean a step failed. Open the failed step to read the error, fix it, and push the change again.
 
-Job xuất bản có environment gate để người được chỉ định review trước khi chạy. Chưa có image nào được đẩy lên Docker Hub từ máy phát triển này. Sau khi publish, máy khác có thể chạy image như sau:
+The **Publish FOCAL image to Docker Hub** workflow runs only when started manually. Before publishing, review the changed files and confirm the CI workflow succeeded for the commit you intend to release.
+
+### Configure Docker Hub credentials and approval
+
+Do this once before publishing:
+
+1. Create a Docker Hub Personal Access Token (PAT) with **Repo Read & Write** permission. Read-only permission cannot push images. Docker documents that **Repo Read & Write** allows pushing images to repositories your account manages. [Docker access token permissions](https://docs.docker.com/security/access-tokens/reference/)
+2. In the GitHub repository, open **Settings → Secrets and variables → Actions**.
+3. Add a repository secret named `DOCKERHUB_USERNAME`. Its value is the Docker Hub login username: `nmp`.
+4. Add a second secret named `DOCKERHUB_TOKEN`. Its value is the full PAT. Do not add quotes or the word `Bearer`. Never put the token in source code, README files, or chat messages.
+5. Open **Settings → Environments** and select or create the environment named `docker-hub-publish`.
+6. Under **Deployment protection rules**, enable **Required reviewers** and add the GitHub account that must approve the release. The current environment needs this reviewer rule to enforce a wait for approval.
+
+GitHub pauses a job that uses an environment with required reviewers until an authorized reviewer approves it. If the person starting the workflow must also approve it, leave **Prevent self-review** disabled. [GitHub environment approvals](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments)
+
+### Publish after review
+
+1. In GitHub, open **Actions** and select **Publish FOCAL image to Docker Hub**.
+2. Select **Run workflow** and use the `main` branch.
+3. Enter `nmp635/cdai-focal` as the image name and `latest` as the tag. A tag is the label used to identify an image version.
+4. Start the workflow. If required reviewers are configured, GitHub pauses the job for approval.
+5. Review the commit and workflow run, then select **Review deployments → Approve and deploy**.
+6. After approval, GitHub Actions logs in to Docker Hub, builds the image, and pushes it. You do not need to run `docker push` manually.
+
+The publish run should finish with a green check. The **Build and publish image** step should show `success`. Confirm the `latest` tag on [Docker Hub: nmp635/cdai-focal](https://hub.docker.com/r/nmp635/cdai-focal).
+
+The image has already been published publicly as `nmp635/cdai-focal:latest`. On another computer with Docker Desktop running, download and run it with:
 
 ```powershell
-docker pull ten-tai-khoan/cdai-focal-design:latest
-docker run --rm -p 8501:8501 ten-tai-khoan/cdai-focal-design:latest
+docker pull nmp635/cdai-focal:latest
+docker run --rm -p 8501:8501 nmp635/cdai-focal:latest
 ```
 
-Thay `ten-tai-khoan` bằng Docker Hub username đã dùng khi xuất bản.
+Open `http://localhost:8501`. Because the repository is public, users do not need a Docker Hub token to pull the image.
 
-## Công nghệ và nguồn
+## Troubleshooting
 
-- Giao diện: Streamlit
-- Mô hình và pipeline: FOCAL, dựa trên mã nguồn [tomoyoshki/focal](https://github.com/tomoyoshki/focal)
-- Dataset: [nguyenmp/focal-dataset trên Kaggle](https://www.kaggle.com/datasets/nguyenmp/focal-dataset)
+- **`docker` is not recognized:** Install Docker Desktop, then close and reopen PowerShell.
+- **`docker version` shows Client but no Server:** Docker Desktop Engine is not running. Open Docker Desktop, select **Troubleshoot → Restart Docker Desktop**, and wait until the Engine is ready.
+- **`read-only file system` while pulling:** This is a Docker Desktop storage issue, not an app error. Restart Docker Desktop and check free disk space. Do not select **Clean up data** or **Reset to factory defaults** unless you have backed up anything you need; these options can delete local images and containers. [Docker Desktop troubleshooting](https://docs.docker.com/desktop/troubleshoot-and-support/troubleshoot/)
+- **`authentication required` while pulling the public image:** Run `docker logout`, then retry `docker pull`. A public image does not require Docker Hub login. [Docker login](https://docs.docker.com/reference/cli/docker/login/)
+- **`insufficient_scope` in the publish workflow:** Check that the PAT has **Repo Read & Write** permission, `DOCKERHUB_USERNAME` is `nmp`, `DOCKERHUB_TOKEN` contains an active PAT, and the image name and tag are `nmp635/cdai-focal` and `latest`.
+- **The workflow succeeded but the new tag is not visible:** Refresh the Docker Hub repository page and confirm that the workflow used `nmp635/cdai-focal:latest`.
+
+## Technology and sources
+
+- Web interface: Streamlit
+- Model and pipeline: FOCAL, based on [tomoyoshki/focal](https://github.com/tomoyoshki/focal)
+- Dataset: [nguyenmp/focal-dataset on Kaggle](https://www.kaggle.com/datasets/nguyenmp/focal-dataset)
