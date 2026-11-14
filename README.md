@@ -54,6 +54,61 @@ streamlit run app.py
 
 Open the local address printed by Streamlit, usually `http://localhost:8501`.
 
+## Run API and security test cases
+
+Run the automated local API/system and safe security checks with Python's built-in test runner:
+
+```powershell
+python -m unittest discover -s tests -v
+```
+
+The suite has 20 cases. The real-recording AI test can run with a synchronized pair. To also compare the prediction with ground truth, set the expected label from the dataset:
+
+```powershell
+$env:FOCAL_TEST_AUDIO_FILE='D:\MOD_vehicle\raw_data\example\aud.csv'
+$env:FOCAL_TEST_SEISMIC_FILE='D:\MOD_vehicle\raw_data\example\ehz.csv'
+$env:FOCAL_TEST_EXPECTED_LABEL='bicycle'
+python -m unittest discover -s tests -v
+```
+
+Replace the example paths and class name with the actual recording and label. If the class label is not known, leave `FOCAL_TEST_EXPECTED_LABEL` unset; the test will still run inference but cannot score correctness. Use a matching audio/seismic pair from the same recording. Security checks must be run only against the local copy or a staging service controlled by admin; they do not perform a public-site scan or a high-volume load test.
+
+## REST API
+
+The project also provides a REST API for integrations and API-level testing. It uses the same FOCAL preprocessing and checkpoint as the Streamlit app. It does not train the model when a request arrives; the checkpoint must already be present.
+
+Start the API in a second PowerShell window:
+
+```powershell
+uvicorn api:app --host 0.0.0.0 --port 8000
+```
+
+Open `http://localhost:8000/docs` for the interactive API page. Check `GET /api/v1/health`; `checkpoint_ready` should be `true`. To predict, send one audio file (`.wav` or acoustic MOD `.csv`) and its matching EHZ seismic `.csv` to `POST /api/v1/predict` as multipart form fields named `audio` and `seismic`.
+
+PowerShell example:
+
+```powershell
+curl.exe -X POST "http://localhost:8000/api/v1/predict" `
+  -F "audio=@D:\data\aud.csv" `
+  -F "seismic=@D:\data\ehz.csv"
+```
+
+Each file is limited to 16 MiB and the pair to 24 MiB. The JSON response contains the predicted class (or `null` when rejected as unknown), confidence, top class probabilities, and test-set accuracy metadata. Confidence is not a promise that this particular prediction is correct.
+
+For a container, build the image as usual, then run the API instead of Streamlit:
+
+```powershell
+docker run --rm -p 8000:8000 focal-vehicle-classifier:local uvicorn api:app --host 0.0.0.0 --port 8000
+```
+
+For a public deployment, configure a long random `FOCAL_API_KEY` environment variable in the hosting service. When configured, clients must send it in the `X-API-Key` header. Keep the key in the host's secret settings, never in source code. A separate Render web service can use this start command (the existing Streamlit service can remain as it is):
+
+```text
+uvicorn api:app --host 0.0.0.0 --port $PORT
+```
+
+The first health check should return `checkpoint_ready: true`. If it returns `false`, make sure `models/vehicle_focal.pt` and `models/labels.json` are included in the service image before deploying.
+
 To train the model again from a downloaded dataset, set the environment variable to the dataset's `raw_data` directory and run `train_focal.py`. For example:
 
 ```powershell

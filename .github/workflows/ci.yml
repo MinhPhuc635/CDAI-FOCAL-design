@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Check Python syntax
-        run: python -m compileall -q app.py focal_pipeline.py prepare_mod_data.py train_focal.py evaluate_focal.py focal-main/src
+        run: python -m compileall -q app.py api.py focal_pipeline.py prepare_mod_data.py train_focal.py evaluate_focal.py focal-main/src
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -28,4 +28,8 @@ jobs:
         with:
           context: .
           push: false
+          load: true
           tags: focal-vehicle-classifier:ci
+
+      - name: Run API and security tests
+        run: docker run --rm focal-vehicle-classifier:ci python -m unittest discover -s tests -v

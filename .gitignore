@@ -1,6 +1,8 @@
 __pycache__/
 .venv/
+tmp/
 .streamlit/secrets.toml
+output/~$*.docx
 models/*.ts
 models/*.log
 models/training_data.json
